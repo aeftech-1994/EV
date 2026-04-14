@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>EV Backlog Sync</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;width:320px;color:#212121;background:#fff}
+.header{background:#0D47A1;color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.logo{width:28px;height:28px;background:#42A5F5;border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px}
+.header h1{font-size:14px;font-weight:600}
+.header small{display:block;font-size:10px;opacity:.75;font-weight:400}
+.section{padding:12px 14px;border-bottom:1px solid #E0E0E0}
+.stat-row{display:flex;gap:8px;margin-bottom:8px}
+.stat{flex:1;background:#E3F2FD;border-radius:5px;padding:8px 10px;text-align:center}
+.stat .n{font-size:22px;font-weight:700;color:#1565C0;line-height:1}
+.stat .l{font-size:10px;color:#1565C0;margin-top:2px}
+.stat.warn{background:#FFEBEE}.stat.warn .n,.stat.warn .l{color:#C62828}
+.stat.ok{background:#E8F5E9}.stat.ok .n,.stat.ok .l{color:#2E7D32}
+.sync-info{font-size:11px;color:#757575;display:flex;align-items:center;gap:5px}
+.dot{width:7px;height:7px;border-radius:50%;background:#4CAF50;flex-shrink:0}
+.dot.off{background:#9E9E9E}
+.btn{width:100%;padding:8px;border-radius:4px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:6px}
+.btn.primary{background:#1565C0;color:#fff}.btn.primary:hover{background:#1976D2}
+.btn.secondary{background:#F5F5F5;color:#424242;border:1px solid #E0E0E0}.btn.secondary:hover{background:#EEEEEE}
+.btn.danger{background:#FFEBEE;color:#C62828;border:1px solid #FFCDD2}.btn.danger:hover{background:#FFCDD2}
+.ticket-list{max-height:180px;overflow-y:auto}
+.ticket-item{padding:8px 0;border-bottom:1px solid #F5F5F5;display:flex;gap:8px;align-items:flex-start}
+.ticket-item:last-child{border-bottom:none}
+.t-badge{font-size:9px;padding:2px 6px;border-radius:8px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.t-inc{background:#FFEBEE;color:#C62828}
+.t-sr{background:#E3F2FD;color:#1565C0}
+.t-chg{background:#E8F5E9;color:#2E7D32}
+.t-pb{background:#FFF3E0;color:#E65100}
+.t-title{font-size:11px;color:#212121;line-height:1.3;flex:1}
+.t-id{font-size:10px;color:#9E9E9E;font-family:monospace}
+.empty{text-align:center;padding:20px;color:#9E9E9E;font-size:12px}
+.status-bar{padding:8px 14px;background:#F5F7FA;display:flex;align-items:center;justify-content:space-between}
+.badge-ev{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:3px 8px;border-radius:10px;background:#E3F2FD;color:#1565C0}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">EV</div>
+  <div>
+    <h1>EasyVista Backlog Sync</h1>
+    <small>Foncia — N2 Téléphonie Mobile</small>
+  </div>
+</div>
+
+<div class="section">
+  <div class="stat-row" id="stats">
+    <div class="stat"><div class="n" id="stat-total">—</div><div class="l">Total</div></div>
+    <div class="stat warn"><div class="n" id="stat-esc">—</div><div class="l">Escaladés</div></div>
+    <div class="stat ok"><div class="n" id="stat-done">—</div><div class="l">Résolus</div></div>
+  </div>
+  <div class="sync-info">
+    <span class="dot" id="sync-dot"></span>
+    <span id="sync-label">En attente de synchronisation...</span>
+  </div>
+</div>
+
+<div class="section" style="padding:10px 14px">
+  <button class="btn primary" onclick="openEV()">🔗 Ouvrir EasyVista Foncia</button>
+  <button class="btn secondary" onclick="forceSync()">🔄 Forcer le scraping DOM</button>
+  <button class="btn danger" onclick="clearTickets()">🗑 Vider le cache local</button>
+</div>
+
+<div class="section" style="padding:10px 14px">
+  <div style="font-size:11px;font-weight:600;color:#757575;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">
+    Derniers tickets EV synchronisés
+  </div>
+  <div class="ticket-list" id="ticket-list">
+    <div class="empty">Ouvrez EasyVista Foncia pour<br>démarrer la synchronisation</div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span class="badge-ev">🔵 BERNARD, Freddy</span>
+  <span style="font-size:10px;color:#9E9E9E" id="tab-status">Onglet EV : inactif</span>
+</div>
+
+<script>
+const TYPE_CLS = {INC:'t-inc',SR:'t-sr',CHG:'t-chg',PB:'t-pb'};
+const TYPE_LBL = {INC:'INC',SR:'SR',CHG:'CHG',PB:'PB'};
+
+function load() {
+  chrome.runtime.sendMessage({type:'GET_TICKETS'}, data => {
+    const tickets = data.ev_tickets || [];
+    const lastSync = data.ev_last_sync;
+
+    document.getElementById('stat-total').textContent = tickets.length || '0';
+    document.getElementById('stat-esc').textContent = tickets.filter(t=>t.status==='Escaladé').length || '0';
+    document.getElementById('stat-done').textContent = tickets.filter(t=>t.status==='Résolu').length || '0';
+
+    const dot = document.getElementById('sync-dot');
+    const label = document.getElementById('sync-label');
+    if (lastSync) {
+      dot.classList.remove('off');
+      const d = new Date(lastSync);
+      label.textContent = `Sync : ${d.toLocaleDateString('fr-FR')} ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
+    } else {
+      dot.classList.add('off');
+    }
+
+    const list = document.getElementById('ticket-list');
+    if (tickets.length === 0) {
+      list.innerHTML = '<div class="empty">Ouvrez EasyVista Foncia pour<br>démarrer la synchronisation</div>';
+      return;
+    }
+    const recent = tickets.slice(-8).reverse();
+    list.innerHTML = recent.map(t => `
+      <div class="ticket-item">
+        <span class="t-badge ${TYPE_CLS[t.type]||'t-inc'}">${TYPE_LBL[t.type]||t.type}</span>
+        <div>
+          <div class="t-title">${t.title}</div>
+          <div class="t-id">${t.id} — ${t.status}</div>
+        </div>
+      </div>
+    `).join('');
+  });
+
+  // Vérifier si un onglet EV est ouvert
+  chrome.tabs.query({url:'https://foncia.easyvista.com/*'}, tabs => {
+    const el = document.getElementById('tab-status');
+    if (tabs.length > 0) {
+      el.textContent = 'Onglet EV : actif ✓';
+      el.style.color = '#2E7D32';
+    } else {
+      el.textContent = 'Onglet EV : inactif';
+      el.style.color = '#9E9E9E';
+    }
+  });
+}
+
+function openEV() {
+  chrome.runtime.sendMessage({type:'OPEN_EV'});
+  window.close();
+}
+
+function forceSync() {
+  chrome.tabs.query({url:'https://foncia.easyvista.com/*'}, tabs => {
+    if (tabs.length === 0) {
+      alert('Aucun onglet EasyVista ouvert. Cliquez sur "Ouvrir EasyVista Foncia" d\'abord.');
+      return;
+    }
+    chrome.scripting.executeScript({
+      target: {tabId: tabs[0].id},
+      func: () => {
+        // Déclenche un re-scraping DOM
+        document.dispatchEvent(new CustomEvent('ev_force_sync'));
+        // Scrolle pour déclencher les lazy loads
+        window.scrollTo(0, document.body.scrollHeight);
+        setTimeout(() => window.scrollTo(0, 0), 500);
+      }
+    });
+    setTimeout(load, 2000);
+  });
+}
+
+function clearTickets() {
+  if (confirm('Vider tous les tickets en cache ?')) {
+    chrome.runtime.sendMessage({type:'CLEAR_TICKETS'}, () => load());
+  }
+}
+
+// Écouter les mises à jour depuis le background
+chrome.runtime.onMessage.addListener(msg => {
+  if (msg.type === 'TICKETS_UPDATED') load();
+});
+
+load();
+setInterval(load, 5000);
+</script>
+</body>
+</html>

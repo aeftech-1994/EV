@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EV Backlog — Foncia N2 Téléphonie</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--ev-blue:#1565C0;--ev-dark:#0D47A1;--ev-sidebar:#1A237E;--ev-border:#E0E0E0;--ev-text:#212121;--ev-muted:#757575;--ev-surface:#FAFAFA}
+body{font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;background:var(--ev-surface);color:var(--ev-text)}
+.topbar{background:var(--ev-dark);display:flex;align-items:center;gap:12px;padding:0 16px;height:44px;position:sticky;top:0;z-index:100}
+.logo{color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.logo-dot{width:22px;height:22px;background:#42A5F5;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff}
+.topnav{display:flex;gap:2px;margin-left:20px}
+.topnav a{color:rgba(255,255,255,.75);padding:4px 10px;border-radius:3px;cursor:pointer;font-size:12px;text-decoration:none}
+.topnav a.active{background:rgba(255,255,255,.15);color:#fff}
+.user-info{margin-left:auto;display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.85);font-size:12px}
+.avatar{width:28px;height:28px;background:#42A5F5;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff}
+.sync-badge{background:rgba(255,255,255,.15);border-radius:10px;padding:2px 10px;font-size:11px;color:#fff;display:flex;align-items:center;gap:5px;cursor:pointer}
+.sync-badge:hover{background:rgba(255,255,255,.25)}
+.sdot{width:7px;height:7px;border-radius:50%;background:#4CAF50}
+.sdot.off{background:#FF9800}
+.shell{display:flex;height:calc(100vh - 44px)}
+.sidebar{width:200px;background:var(--ev-sidebar);flex-shrink:0;padding:8px 0;overflow-y:auto}
+.s-section{padding:6px 12px 2px;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.4);font-weight:600}
+.s-item{display:flex;align-items:center;gap:8px;padding:7px 16px;color:rgba(255,255,255,.8);cursor:pointer;font-size:12px;user-select:none}
+.s-item:hover,.s-item.active{background:rgba(255,255,255,.12);color:#fff}
+.s-icon{width:16px;text-align:center;font-size:13px;flex-shrink:0}
+.s-badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:10px;padding:1px 7px;font-size:10px;color:#fff}
+.s-badge.warn{background:#D32F2F}
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--ev-border);background:#fff;flex-shrink:0}
+.tb-title{font-size:14px;font-weight:600;color:#1A237E;flex-shrink:0}
+.search-box{flex:1;max-width:300px;display:flex;align-items:center;border:1px solid var(--ev-border);border-radius:3px;background:#fff;padding:0 8px;gap:6px}
+.search-box input{border:none;outline:none;width:100%;font-size:12px;padding:5px 0}
+.btn{padding:5px 12px;border-radius:3px;border:1px solid var(--ev-border);background:#fff;cursor:pointer;font-size:12px;color:var(--ev-text);display:flex;align-items:center;gap:5px}
+.btn:hover{background:#F5F5F5}
+.btn.primary{background:var(--ev-blue);color:#fff;border-color:var(--ev-blue)}
+.btn.primary:hover{background:#1976D2}
+.filters{display:flex;gap:6px;padding:6px 12px;border-bottom:1px solid var(--ev-border);background:#fff;flex-shrink:0;flex-wrap:wrap;align-items:center}
+.fl{font-size:11px;color:var(--ev-muted)}
+.chip{padding:3px 10px;border-radius:12px;font-size:11px;cursor:pointer;border:1px solid var(--ev-border);background:#fff;color:var(--ev-text);user-select:none}
+.chip.active{background:var(--ev-blue);color:#fff;border-color:var(--ev-blue)}
+.chip:hover:not(.active){background:#F5F5F5}
+.table-wrap{flex:1;overflow-y:auto}
+table{width:100%;border-collapse:collapse}
+thead{position:sticky;top:0;z-index:2}
+th{background:#F5F7FA;border-bottom:1.5px solid var(--ev-border);padding:7px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--ev-muted);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid #F0F0F0;vertical-align:middle;font-size:12px}
+tr:hover td{background:#E8F4FD;cursor:pointer}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap}
+.b-inc{background:#FFEBEE;color:#C62828}.b-sr{background:#E3F2FD;color:#1565C0}
+.b-chg{background:#E8F5E9;color:#2E7D32}.b-pb{background:#FFF3E0;color:#E65100}
+.b-ev{background:#F3E5F5;color:#7B1FA2}
+.sp{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.s-new{background:#E3F2FD;color:#1565C0}.s-wip{background:#FFF8E1;color:#F57F17}
+.s-wait{background:#F3E5F5;color:#9C27B0}.s-done{background:#E8F5E9;color:#2E7D32}
+.s-esc{background:#FFEBEE;color:#C62828}
+.d{width:7px;height:7px;border-radius:50%;display:inline-block}
+.d-new{background:#1976D2}.d-wip{background:#F57F17}.d-wait{background:#9C27B0}.d-done{background:#388E3C}.d-esc{background:#D32F2F}
+.pc{font-weight:600}.pc-crit{color:#B71C1C}.pc-high{color:#D32F2F}.pc-med{color:#F57F17}.pc-low{color:#388E3C}
+.detail{width:340px;border-left:1px solid var(--ev-border);background:#fff;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.d-hdr{padding:12px 14px;border-bottom:1px solid var(--ev-border);display:flex;justify-content:space-between;align-items:center}
+.d-hdr h3{font-size:13px;font-weight:600;color:#1A237E}
+.d-close{cursor:pointer;color:var(--ev-muted);font-size:20px;line-height:1}
+.d-body{flex:1;overflow-y:auto;padding:12px 14px}
+.df{margin-bottom:12px}.dl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ev-muted);margin-bottom:3px;font-weight:600}
+.dv{font-size:12px;color:var(--ev-text)}
+.ddesc{background:#F5F7FA;border-radius:4px;padding:8px 10px;font-size:12px;line-height:1.5;border:1px solid var(--ev-border)}
+.dhr{border:none;border-top:1px solid var(--ev-border);margin:10px 0}
+.d-foot{padding:10px 14px;border-top:1px solid var(--ev-border);display:flex;gap:8px}
+.tl{display:flex;gap:8px;margin-bottom:10px;font-size:11px}
+.tl-dot{width:8px;height:8px;border-radius:50%;background:#1976D2;flex-shrink:0;margin-top:3px}
+.tl-t{color:var(--ev-muted)}.tl-t strong{color:var(--ev-text)}
+.banner{background:#E3F2FD;border:1px solid #90CAF9;border-radius:4px;padding:8px 12px;margin:8px 12px;font-size:11px;color:#1565C0;display:flex;align-items:center;gap:6px}
+.banner.ev{background:#EDE7F6;border-color:#CE93D8;color:#7B1FA2}
+.empty{text-align:center;padding:60px;color:#9E9E9E}
+.ext-notice{background:#FFF8E1;border:1px solid #FFE082;border-radius:4px;padding:10px 14px;margin:12px;font-size:12px;color:#E65100}
+.ext-notice a{color:#E65100;font-weight:600}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:200}
+.modal{background:#fff;border-radius:6px;width:480px;max-height:90vh;overflow-y:auto}
+.m-hdr{padding:14px 18px;border-bottom:1px solid var(--ev-border);display:flex;justify-content:space-between;align-items:center}
+.m-hdr h3{font-size:15px;font-weight:600;color:#1A237E}
+.m-body{padding:18px}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--ev-muted);margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:7px 10px;border:1px solid var(--ev-border);border-radius:3px;font-size:13px;color:var(--ev-text);font-family:inherit;outline:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--ev-blue)}
+.fg textarea{resize:vertical;min-height:70px}
+.frow{display:flex;gap:12px}.frow .fg{flex:1}
+.m-foot{padding:12px 18px;border-top:1px solid var(--ev-border);display:flex;justify-content:flex-end;gap:8px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><div class="logo-dot">EV</div>EasyVista Service Manager</div>
+  <div class="topnav">
+    <a class="active">Backlog</a>
+    <a href="https://foncia.easyvista.com/index.php" target="_blank">↗ EasyVista Foncia</a>
+    <a>Rapports</a>
+  </div>
+  <div class="user-info">
+    <div class="sync-badge" onclick="loadFromExtension()" id="sync-btn">
+      <span class="sdot off" id="sdot"></span>
+      <span id="sync-label">Extension déconnectée</span>
+    </div>
+    <div class="avatar">FB</div>
+    BERNARD, Freddy
+  </div>
+</div>
+
+<div class="shell">
+  <div class="sidebar">
+    <div class="s-section">Mes vues</div>
+    <div class="s-item active" onclick="setView('all',this)"><span class="s-icon">☰</span>Tous les tickets<span class="s-badge" id="b-all">0</span></div>
+    <div class="s-item" onclick="setView('INC',this)"><span class="s-icon">⚡</span>Incidents<span class="s-badge" id="b-inc">0</span></div>
+    <div class="s-item" onclick="setView('SR',this)"><span class="s-icon">📋</span>Demandes<span class="s-badge" id="b-sr">0</span></div>
+    <div class="s-item" onclick="setView('CHG',this)"><span class="s-icon">🔄</span>Changements<span class="s-badge" id="b-chg">0</span></div>
+    <div class="s-item" onclick="setView('PB',this)"><span class="s-icon">🔍</span>Problèmes<span class="s-badge" id="b-pb">0</span></div>
+    <div class="s-section" style="margin-top:12px">EasyVista Live</div>
+    <div class="s-item" onclick="setView('ev',this)"><span class="s-icon">🔵</span>Tickets EV sync<span class="s-badge" id="b-ev">0</span></div>
+    <div class="s-item" onclick="setView('esc',this)"><span class="s-icon">🚨</span>Escaladés<span class="s-badge warn" id="b-esc">0</span></div>
+    <div class="s-section" style="margin-top:12px">Outils</div>
+    <div class="s-item" onclick="exportCSV()"><span class="s-icon">📤</span>Export CSV</div>
+  </div>
+
+  <div class="content">
+    <div class="toolbar">
+      <span class="tb-title" id="view-title">Backlog — Tous les tickets</span>
+      <div class="search-box"><span style="color:#9E9E9E">🔍</span><input type="text" placeholder="Rechercher..." id="q" oninput="render()"></div>
+      <button class="btn primary" onclick="openModal()">+ Nouveau</button>
+      <button class="btn" onclick="loadFromExtension()" title="Charger les tickets depuis l'extension Chrome">🔄 Sync EV</button>
+      <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    </div>
+    <div class="filters">
+      <span class="fl">Statut :</span>
+      <span class="chip active" onclick="setF('st','all',this)">Tous</span>
+      <span class="chip" onclick="setF('st','Nouveau',this)">Nouveau</span>
+      <span class="chip" onclick="setF('st','En cours',this)">En cours</span>
+      <span class="chip" onclick="setF('st','En attente',this)">En attente</span>
+      <span class="chip" onclick="setF('st','Résolu',this)">Résolu</span>
+      <span style="color:#E0E0E0;margin:0 4px">|</span>
+      <span class="fl">Priorité :</span>
+      <span class="chip active" onclick="setF('pr','all',this)">Toutes</span>
+      <span class="chip" onclick="setF('pr','Critique',this)">Critique</span>
+      <span class="chip" onclick="setF('pr','Haute',this)">Haute</span>
+      <span class="chip" onclick="setF('pr','Moyenne',this)">Moyenne</span>
+    </div>
+    <div id="ext-notice" class="ext-notice" style="display:none">
+      ⚠️ Extension Chrome non détectée. <a href="#" onclick="showInstallHelp()">Comment l'installer ?</a>
+      — En attendant, les tickets EasyVista peuvent être ajoutés manuellement.
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th><input type="checkbox" onchange="toggleAll(this)"></th>
+          <th>N° Ticket</th><th>Type</th><th>Titre</th><th>Demandeur</th>
+          <th>Priorité</th><th>Statut</th><th>SLA</th><th>Assigné à</th><th>Source</th><th>Date</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="detail" id="detail" style="display:none">
+    <div class="d-hdr"><h3 id="d-num">—</h3><span class="d-close" onclick="closeDetail()">×</span></div>
+    <div class="d-body" id="d-body"></div>
+    <div class="d-foot">
+      <button class="btn primary" style="flex:1">Prendre en charge</button>
+      <button class="btn" onclick="closeDetail()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="m-hdr"><h3>Nouveau ticket</h3><span class="d-close" onclick="closeModal()">×</span></div>
+    <div class="m-body">
+      <div class="frow">
+        <div class="fg"><label>Type</label><select id="f-type"><option>Incident</option><option>Demande de service</option><option>Changement</option><option>Problème</option></select></div>
+        <div class="fg"><label>Priorité</label><select id="f-prio"><option>Critique</option><option>Haute</option><option>Moyenne</option><option>Basse</option></select></div>
+      </div>
+      <div class="fg"><label>Titre</label><input type="text" id="f-title" placeholder="Résumé du ticket..."></div>
+      <div class="frow">
+        <div class="fg"><label>Demandeur</label><input type="text" id="f-user" placeholder="Nom Prénom"></div>
+        <div class="fg"><label>Catégorie</label><select id="f-cat"><option>Téléphonie Mobile</option><option>Réseau</option><option>Matériel</option><option>Logiciel</option><option>Accès / Droits</option></select></div>
+      </div>
+      <div class="fg"><label>Description</label><textarea id="f-desc" placeholder="Décrivez le problème..."></textarea></div>
+      <div class="frow">
+        <div class="fg"><label>Assigné à</label><select id="f-assign"><option>BERNARD, Freddy</option><option>Équipe N2</option><option>Équipe N1</option><option>Orange Business</option></select></div>
+        <div class="fg"><label>SLA (heures)</label><input type="number" id="f-sla" value="4"></div>
+      </div>
+    </div>
+    <div class="m-foot"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" onclick="createTicket()">Créer</button></div>
+  </div>
+</div>
+
+<script>
+const TYPES={INC:{l:'Incident',c:'b-inc'},SR:{l:'Demande SR',c:'b-sr'},CHG:{l:'Changement',c:'b-chg'},PB:{l:'Problème',c:'b-pb'}};
+const STATUS={'Nouveau':{c:'s-new',d:'d-new'},'En cours':{c:'s-wip',d:'d-wip'},'En attente':{c:'s-wait',d:'d-wait'},'Résolu':{c:'s-done',d:'d-done'},'Escaladé':{c:'s-esc',d:'d-esc'}};
+const PC={Critique:'pc-crit',Haute:'pc-high',Moyenne:'pc-med',Basse:'pc-low'};
+
+let allTickets = [
+  {id:'INC-2024-0041',type:'INC',title:'Ligne mobile SFR non reçue — DUPONT Paul',user:'DUPONT Paul',prio:'Critique',status:'Escaladé',sla:'2h ⚠️',assign:'BERNARD, Freddy',date:'14/04 09:12',cat:'Téléphonie Mobile',desc:'La ligne commandée n\'a pas été provisionnée. Escalade Orange requise.',log:[{d:'14/04 09:12',a:'BERNARD F.',t:'Ticket créé et escaladé'}],source:'local'},
+  {id:'INC-2024-0040',type:'INC',title:'iPhone 15 bloqué MDM après réinitialisation',user:'MARTIN Claire',prio:'Haute',status:'En cours',sla:'4h',assign:'BERNARD, Freddy',date:'14/04 08:44',cat:'Téléphonie Mobile',desc:'Le profil MDM échoue avec erreur 403 après réinitialisation.',log:[{d:'14/04 08:44',a:'MARTIN C.',t:'Incident déclaré'}],source:'local'},
+  {id:'SR-2024-0088',type:'SR',title:'Nouvelle ligne mobile — LEROY Antoine',user:'RH Foncia',prio:'Moyenne',status:'En attente',sla:'24h',assign:'BERNARD, Freddy',date:'13/04 16:30',cat:'Téléphonie Mobile',desc:'Nouvelle embauche — en attente bon de commande OB.',log:[{d:'13/04 16:30',a:'RH',t:'Demande créée'}],source:'local'},
+  {id:'CHG-2024-0015',type:'CHG',title:'Migration forfaits 4G → 5G parc mobile',user:'DSI Foncia',prio:'Haute',status:'En cours',sla:'72h',assign:'BERNARD, Freddy',date:'11/04 09:00',cat:'Téléphonie Mobile',desc:'Migration 47 lignes — Phase 1 en cours.',log:[{d:'11/04 09:00',a:'DSI',t:'Changement approuvé'}],source:'local'},
+];
+
+let fView='all', fSt='all', fPr='all', counter=43;
+
+function getFiltered(){
+  const q=(document.getElementById('q')||{}).value?.toLowerCase()||'';
+  return allTickets.filter(t=>{
+    if(fView==='ev'&&t.source!=='easyvista')return false;
+    if(fView==='esc'&&t.status!=='Escaladé')return false;
+    if(['INC','SR','CHG','PB'].includes(fView)&&t.type!==fView)return false;
+    if(fSt!=='all'&&t.status!==fSt)return false;
+    if(fPr!=='all'&&t.prio!==fPr)return false;
+    if(q&&!t.title.toLowerCase().includes(q)&&!t.id.toLowerCase().includes(q)&&!t.user.toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+
+function render(){
+  const list=getFiltered();
+  const tbody=document.getElementById('tbody');
+  if(!list.length){tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:40px;color:#9E9E9E">Aucun ticket</td></tr>';updateBadges();return;}
+  tbody.innerHTML=list.map(t=>{
+    const tp=TYPES[t.type]||{l:t.type,c:'b-sr'};
+    const st=STATUS[t.status]||{c:'s-new',d:'d-new'};
+    const isEV=t.source==='easyvista'||t.source==='dom';
+    return `<tr onclick="openDetail('${t.id}')">
+      <td><input type="checkbox" onclick="event.stopPropagation()"></td>
+      <td style="font-family:monospace;font-size:11px;color:#1565C0;font-weight:600">${t.id}</td>
+      <td><span class="badge ${tp.c}">${tp.l}</span></td>
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.title}</td>
+      <td style="color:#424242">${t.user}</td>
+      <td class="pc ${PC[t.prio]||''}">${t.prio}</td>
+      <td><span class="sp ${st.c}"><span class="d ${st.d}"></span>${t.status}</span></td>
+      <td style="font-size:11px;color:${t.sla.includes('⚠️')?'#D32F2F':'#388E3C'}">${t.sla}</td>
+      <td style="font-size:11px;color:#616161">${t.assign}</td>
+      <td>${isEV?'<span class="badge b-ev">EV Live</span>':'<span style="font-size:10px;color:#9E9E9E">local</span>'}</td>
+      <td style="font-size:11px;color:#9E9E9E;white-space:nowrap">${t.date}</td>
+    </tr>`;
+  }).join('');
+  updateBadges();
+}
+
+function updateBadges(){
+  document.getElementById('b-all').textContent=allTickets.length;
+  document.getElementById('b-inc').textContent=allTickets.filter(t=>t.type==='INC').length;
+  document.getElementById('b-sr').textContent=allTickets.filter(t=>t.type==='SR').length;
+  document.getElementById('b-chg').textContent=allTickets.filter(t=>t.type==='CHG').length;
+  document.getElementById('b-pb').textContent=allTickets.filter(t=>t.type==='PB').length;
+  document.getElementById('b-ev').textContent=allTickets.filter(t=>t.source==='easyvista'||t.source==='dom').length;
+  document.getElementById('b-esc').textContent=allTickets.filter(t=>t.status==='Escaladé').length;
+}
+
+function setView(v,el){
+  fView=v;
+  document.querySelectorAll('.s-item').forEach(e=>e.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const titles={all:'Tous les tickets',INC:'Incidents',SR:'Demandes',CHG:'Changements',PB:'Problèmes',ev:'Tickets EasyVista (Live)',esc:'Tickets escaladés'};
+  document.getElementById('view-title').textContent='Backlog — '+(titles[v]||v);
+  render();
+}
+
+function setF(type,val,el){
+  const parent=el.parentElement;
+  parent.querySelectorAll('.chip').forEach(c=>{
+    if(c.onclick&&c.onclick.toString().includes(`'${type}'`))c.classList.remove('active');
+  });
+  el.classList.add('active');
+  if(type==='st')fSt=val;else fPr=val;
+  render();
+}
+
+function toggleAll(cb){
+  document.querySelectorAll('#tbody input[type=checkbox]').forEach(c=>c.checked=cb.checked);
+}
+
+function openDetail(id){
+  const t=allTickets.find(x=>x.id===id);
+  if(!t)return;
+  const tp=TYPES[t.type]||{l:t.type,c:'b-sr'};
+  const st=STATUS[t.status]||{c:'s-new',d:'d-new'};
+  document.getElementById('d-num').textContent=t.id;
+  document.getElementById('d-body').innerHTML=`
+    ${t.source==='easyvista'?'<div class="banner ev">🔵 Ce ticket est synchronisé depuis EasyVista Foncia en temps réel</div>':''}
+    <div class="df"><div class="dl">Type</div><div class="dv"><span class="badge ${tp.c}">${tp.l}</span></div></div>
+    <div class="df"><div class="dl">Titre</div><div class="dv" style="font-weight:600;font-size:13px">${t.title}</div></div>
+    <div class="df"><div class="dl">Description</div><div class="ddesc">${t.desc}</div></div>
+    <hr class="dhr">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="df"><div class="dl">Demandeur</div><div class="dv">${t.user}</div></div>
+      <div class="df"><div class="dl">Catégorie</div><div class="dv">${t.cat}</div></div>
+      <div class="df"><div class="dl">Priorité</div><div class="dv pc ${PC[t.prio]||''}">${t.prio}</div></div>
+      <div class="df"><div class="dl">Statut</div><div class="dv"><span class="sp ${st.c}"><span class="d ${st.d}"></span>${t.status}</span></div></div>
+      <div class="df"><div class="dl">Assigné à</div><div class="dv">${t.assign}</div></div>
+      <div class="df"><div class="dl">SLA</div><div class="dv">${t.sla}</div></div>
+    </div>
+    <hr class="dhr">
+    <div class="dl" style="margin-bottom:8px">Journal</div>
+    ${(t.log||[]).map(l=>`<div class="tl"><div class="tl-dot"></div><div class="tl-t"><strong>${l.a}</strong> — ${l.d}<br>${l.t}</div></div>`).join('')}
+  `;
+  document.getElementById('detail').style.display='flex';
+}
+function closeDetail(){document.getElementById('detail').style.display='none';}
+function openModal(){document.getElementById('modal').style.display='flex';}
+function closeModal(){document.getElementById('modal').style.display='none';}
+
+function createTicket(){
+  const tmap={'Incident':'INC','Demande de service':'SR','Changement':'CHG','Problème':'PB'};
+  const type=tmap[document.getElementById('f-type').value]||'INC';
+  const now=new Date();
+  const date=`${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  counter++;
+  allTickets.unshift({
+    id:`${type}-2024-00${counter}`,type,
+    title:document.getElementById('f-title').value||'Nouveau ticket',
+    user:document.getElementById('f-user').value||'Inconnu',
+    prio:document.getElementById('f-prio').value,
+    status:'Nouveau',
+    sla:document.getElementById('f-sla').value+'h',
+    assign:document.getElementById('f-assign').value,
+    date,cat:document.getElementById('f-cat').value,
+    desc:document.getElementById('f-desc').value||'—',
+    log:[{d:date,a:'Création manuelle',t:'Ticket créé dans le backlog local'}],
+    source:'local'
+  });
+  closeModal();render();
+}
+
+// ─── Intégration Extension Chrome ─────────────────────────────────────────
+function loadFromExtension(){
+  const EXT_ID = 'gpoimkkkkodkaiehedoenhmdcoochgpg';
+  try {
+    chrome.runtime.sendMessage(EXT_ID, {type:'GET_TICKETS'}, response => {
+      if(chrome.runtime.lastError || !response){
+        // Fallback bridge.js postMessage
+        window.postMessage({type:'EV_GET_TICKETS'},'*');
+        return;
+      }
+      injectEVTickets(response.tickets||[], response.lastSync);
+    });
+  } catch(e) {
+    window.postMessage({type:'EV_GET_TICKETS'},'*');
+  }
+}
+
+function injectEVTickets(evTickets, lastSync){
+  if(!evTickets||evTickets.length===0)return;
+  // Merge : les tickets EV écrasent les locaux avec le même id
+  const map={};
+  allTickets.forEach(t=>map[t.id]=t);
+  evTickets.forEach(t=>map[t.id]=t);
+  allTickets=Object.values(map);
+
+  // Mettre à jour le statut de sync
+  const sdot=document.getElementById('sdot');
+  const slabel=document.getElementById('sync-label');
+  sdot.classList.remove('off');
+  if(lastSync){
+    const d=new Date(lastSync);
+    slabel.textContent=`EV sync : ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
+  } else {
+    slabel.textContent=`${evTickets.length} tickets EV chargés`;
+  }
+  render();
+}
+
+// Écouter les messages de l'extension via window
+window.addEventListener('message', e=>{
+  if(e.data&&e.data.type==='EV_TICKETS_DATA'){
+    injectEVTickets(e.data.tickets||[], e.data.lastSync);
+  }
+});
+
+// Polling automatique si extension disponible (toutes les 10s)
+// Auto-sync toutes les 10s
+setInterval(loadFromExtension, 10000);
+loadFromExtension();
+
+function exportCSV(){
+  const rows=[['ID','Type','Titre','Demandeur','Priorité','Statut','SLA','Assigné','Source','Date']];
+  allTickets.forEach(t=>rows.push([t.id,t.type,t.title,t.user,t.prio,t.status,t.sla,t.assign,t.source||'local',t.date]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='backlog_ev_foncia.csv';a.click();
+  URL.revokeObjectURL(url);
+}
+
+function showInstallHelp(){
+  alert('Installation de l\'extension Chrome EV Sync :\n\n1. Ouvrez chrome://extensions\n2. Activez le "Mode développeur" (en haut à droite)\n3. Cliquez "Charger l\'extension non empaquetée"\n4. Sélectionnez le dossier "ev-extension"\n5. Ouvrez EasyVista Foncia — la synchronisation démarre automatiquement');
+}
+
+render();
+</script>
+</body>
+</html>
