@@ -2,7 +2,37 @@
  * EV Backlog Sync — Background Service Worker v1.2
  */
 
-// Messages internes (content script, popup)
+// ─── Injection automatique sur EasyVista ─────────────────────────────────────
+// Fallback si le content_script déclaratif est bloqué par CSP résiduel
+chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
+  if (info.status === 'complete' && tab.url?.includes('foncia.easyvista.com')) {
+    chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['content.js']
+    }).catch(() => {
+      // Silencieux — déjà injecté ou permissions insuffisantes
+    });
+  }
+});
+
+// ─── Auto-sync toutes les 5 minutes ──────────────────────────────────────────
+chrome.alarms.create('ev_auto_sync', { periodInMinutes: 5 });
+
+chrome.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name !== 'ev_auto_sync') return;
+  chrome.tabs.query({ url: 'https://foncia.easyvista.com/*' }, tabs => {
+    tabs.forEach(tab => {
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          if (typeof window._evTriggerSync === 'function') window._evTriggerSync();
+        }
+      }).catch(() => {});
+    });
+  });
+});
+
+// ─── Messages internes (content script, popup) ───────────────────────────────
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'TICKETS_UPDATED') {
     chrome.action.setBadgeText({ text: String(msg.count) });
@@ -30,7 +60,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-// Messages EXTERNES (depuis backlog.html sur localhost)
+// ─── Messages EXTERNES (depuis backlog.html sur localhost) ───────────────────
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'GET_TICKETS') {
     chrome.storage.local.get(['ev_tickets', 'ev_last_sync'], data => {
@@ -46,4 +76,8 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
 
 chrome.runtime.onStartup.addListener(() => {
   chrome.action.setBadgeText({ text: '' });
+  // Recréer l'alarme au démarrage si elle a disparu
+  chrome.alarms.get('ev_auto_sync', alarm => {
+    if (!alarm) chrome.alarms.create('ev_auto_sync', { periodInMinutes: 5 });
+  });
 });
